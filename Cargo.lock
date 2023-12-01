@@ -209,6 +209,7 @@ name = "cch23-brianheckel"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "serde_json",
  "shuttle-axum",
  "shuttle-runtime",
  "tokio",
