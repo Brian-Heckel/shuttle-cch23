@@ -116,6 +116,16 @@ async fn recalibrate_ids(Path(path): Path<String>) -> Result<String, ServerError
     Ok(sled.to_string())
 }
 
+#[axum::debug_handler]
+async fn count_elves(body: String) -> impl IntoResponse {
+    let elf_count = body.matches("elf").count();
+    let elf_on_a_shelf = body.matches("elf on a shelf").count();
+    let just_shelf = body.matches("shelf").count() - elf_on_a_shelf;
+    Json(
+        json!( { "elf": elf_count, "elf on a shelf": elf_on_a_shelf, "Shelf with no elf on it": just_shelf  }),
+    )
+}
+
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
@@ -123,6 +133,7 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/1/*nums", get(recalibrate_ids))
         .route("/4/strength", post(reindeer_cheer))
         .route("/4/contest", post(reindeer_contest))
+        .route("/6", post(count_elves))
         .route("/", get(hello_world));
     Ok(router.into())
 }
