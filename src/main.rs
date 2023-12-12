@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use axum::{
-    extract::Path,
+    extract::{Multipart, Path},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
@@ -9,8 +9,14 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 use base64::{engine::general_purpose, Engine};
+use pix::{chan::Channel, rgb::Rgb};
+use png_pong::Decoder;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tower_http::services::ServeFile;
+use tracing::Instrument;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
+use tracing_tree::HierarchicalLayer;
 
 enum ServerError {
     Day1NotValidPath,
@@ -49,7 +55,7 @@ async fn reindeer_cheer(Json(deers): Json<Vec<Deer>>) -> impl IntoResponse {
     total.to_string()
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct DeerDetailed {
     name: String,
     strength: u32,
@@ -69,6 +75,7 @@ struct ContestResults {
     consumer: String,
 }
 
+#[tracing::instrument]
 async fn reindeer_contest(Json(deers): Json<Vec<DeerDetailed>>) -> Json<ContestResults> {
     let fastest = deers
         .iter()
@@ -97,6 +104,7 @@ async fn reindeer_contest(Json(deers): Json<Vec<DeerDetailed>>) -> Json<ContestR
     })
 }
 
+#[tracing::instrument]
 fn recalibrate(nums: Vec<i64>) -> Result<i64, ServerError> {
     if nums.len() == 1 {
         return Ok(nums[0].pow(3));
@@ -109,6 +117,7 @@ fn recalibrate(nums: Vec<i64>) -> Result<i64, ServerError> {
 }
 
 #[axum::debug_handler]
+#[tracing::instrument]
 async fn recalibrate_ids(Path(path): Path<String>) -> Result<String, ServerError> {
     let nums: Vec<&str> = path.split('/').collect();
     let nums: Vec<Result<i64, _>> = nums.into_iter().map(|s| s.parse::<i64>()).collect();
@@ -121,6 +130,7 @@ async fn recalibrate_ids(Path(path): Path<String>) -> Result<String, ServerError
 }
 
 #[axum::debug_handler]
+#[tracing::instrument]
 async fn count_elves(body: String) -> impl IntoResponse {
     let elf_count = body.matches("elf").count();
     let elf_on_a_shelf = body.matches("elf on a shelf").count();
@@ -138,6 +148,7 @@ struct CookieRecipe {
 }
 
 #[axum::debug_handler]
+#[tracing::instrument]
 async fn decode_recipe(jar: CookieJar) -> Json<CookieRecipe> {
     let cookie = jar.get("recipe").unwrap();
     let plain_bytes = cookie.value().as_bytes();
@@ -170,6 +181,7 @@ struct BakeOutput {
 }
 
 #[axum::debug_handler]
+#[tracing::instrument]
 async fn bake_recipe(jar: CookieJar) -> Json<BakeOutput> {
     let cookie = jar.get("recipe").unwrap();
     let plain_bytes = cookie.value().as_bytes();
@@ -204,6 +216,7 @@ struct PokeResponse {
 }
 
 #[axum::debug_handler]
+#[tracing::instrument]
 async fn get_pokemon_weight(Path(pokenumber): Path<u32>) -> impl IntoResponse {
     let mut base_url: String = "https://pokeapi.co/api/v2/pokemon/".into();
     base_url.push_str(&pokenumber.to_string());
@@ -214,6 +227,7 @@ async fn get_pokemon_weight(Path(pokenumber): Path<u32>) -> impl IntoResponse {
 }
 
 #[axum::debug_handler]
+#[tracing::instrument]
 async fn get_pokemon_momentum(Path(pokenumber): Path<u32>) -> impl IntoResponse {
     let mut base_url: String = "https://pokeapi.co/api/v2/pokemon/".into();
     base_url.push_str(&pokenumber.to_string());
@@ -226,8 +240,54 @@ async fn get_pokemon_momentum(Path(pokenumber): Path<u32>) -> impl IntoResponse 
     p.to_string()
 }
 
+#[axum::debug_handler]
+#[tracing::instrument]
+async fn num_red_pixels(mut multipart: Multipart) -> impl IntoResponse {
+    let image = multipart.next_field().await.unwrap().unwrap();
+    let data = image.text().await.unwrap();
+    let decoder = Decoder::new(data.as_bytes()).unwrap().into_steps();
+    let num_magic_red: usize = decoder
+        .filter_map(|frame| {
+            let f = frame.ok()?;
+            match f.raster {
+                png_pong::PngRaster::Gray8(_) => None,
+                png_pong::PngRaster::Gray16(_) => None,
+                png_pong::PngRaster::Rgb8(raster) => {
+                    let pixels = raster.pixels();
+                    let magic_red = pixels
+                        .iter()
+                        .filter(|&p| {
+                            let r = Rgb::red(*p).to_f32();
+                            let g = Rgb::green(*p).to_f32();
+                            let b = Rgb::blue(*p).to_f32();
+                            r > g + b
+                        })
+                        .count();
+                    Some(magic_red)
+                }
+                png_pong::PngRaster::Rgb16(_) => None,
+                png_pong::PngRaster::Palette(_, _, _) => None,
+                png_pong::PngRaster::Graya8(_) => None,
+                png_pong::PngRaster::Graya16(_) => None,
+                png_pong::PngRaster::Rgba8(_) => None,
+                png_pong::PngRaster::Rgba16(_) => None,
+            }
+        })
+        .sum();
+    num_magic_red.to_string()
+}
+
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
+    Registry::default()
+        .with(EnvFilter::from_default_env())
+        .with(
+            HierarchicalLayer::new(2)
+                .with_targets(true)
+                .with_bracketed_fields(true),
+        )
+        .init();
+
     let router = Router::new()
         .route("/-1/error", get(get_error))
         .route("/1/*nums", get(recalibrate_ids))
@@ -238,6 +298,11 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/7/bake", get(bake_recipe))
         .route("/8/weight/:pokenumber", get(get_pokemon_weight))
         .route("/8/drop/:pokenumber", get(get_pokemon_momentum))
+        .route("/11/red_pixels", post(num_red_pixels))
+        .nest_service(
+            "/11/assets/decoration.png",
+            ServeFile::new("assets/decoration.png"),
+        )
         .route("/", get(hello_world));
     Ok(router.into())
 }
