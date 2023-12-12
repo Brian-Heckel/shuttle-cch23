@@ -198,6 +198,34 @@ async fn bake_recipe(jar: CookieJar) -> Json<BakeOutput> {
     Json(output)
 }
 
+#[derive(Serialize, Deserialize)]
+struct PokeResponse {
+    weight: u32,
+}
+
+#[axum::debug_handler]
+async fn get_pokemon_weight(Path(pokenumber): Path<u32>) -> impl IntoResponse {
+    let mut base_url: String = "https://pokeapi.co/api/v2/pokemon/".into();
+    base_url.push_str(&pokenumber.to_string());
+    base_url.push_str("/");
+    let body: PokeResponse = reqwest::get(base_url).await.unwrap().json().await.unwrap();
+    let kilo_wieght = body.weight / 10;
+    kilo_wieght.to_string()
+}
+
+#[axum::debug_handler]
+async fn get_pokemon_momentum(Path(pokenumber): Path<u32>) -> impl IntoResponse {
+    let mut base_url: String = "https://pokeapi.co/api/v2/pokemon/".into();
+    base_url.push_str(&pokenumber.to_string());
+    base_url.push_str("/");
+    let g = 9.825;
+    let body: PokeResponse = reqwest::get(base_url).await.unwrap().json().await.unwrap();
+    let kilo_wieght = (body.weight as f64) / 10.0;
+    let v: f64 = 2.0 * g * 10.0;
+    let p = kilo_wieght * v.sqrt();
+    p.to_string()
+}
+
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
@@ -208,6 +236,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/6", post(count_elves))
         .route("/7/decode", get(decode_recipe))
         .route("/7/bake", get(bake_recipe))
+        .route("/8/weight/:pokenumber", get(get_pokemon_weight))
+        .route("/8/drop/:pokenumber", get(get_pokemon_momentum))
         .route("/", get(hello_world));
     Ok(router.into())
 }
