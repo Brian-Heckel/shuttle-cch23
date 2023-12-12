@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use axum::{
     extract::Path,
     http::StatusCode,
@@ -5,6 +7,8 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use axum_extra::extract::CookieJar;
+use base64::{engine::general_purpose, Engine};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -126,6 +130,74 @@ async fn count_elves(body: String) -> impl IntoResponse {
     )
 }
 
+#[derive(Serialize, Deserialize)]
+struct CookieRecipe {
+    flour: u32,
+    #[serde(rename = "chocolate chips")]
+    chocolate_chips: u32,
+}
+
+#[axum::debug_handler]
+async fn decode_recipe(jar: CookieJar) -> Json<CookieRecipe> {
+    let cookie = jar.get("recipe").unwrap();
+    let plain_bytes = cookie.value().as_bytes();
+    let message = general_purpose::STANDARD.decode(plain_bytes).unwrap();
+    let recipe = serde_json::from_slice::<CookieRecipe>(&message).unwrap();
+    Json(recipe)
+}
+
+#[derive(Serialize, Deserialize)]
+struct Ingredients {
+    flour: u32,
+    sugar: u32,
+    butter: u32,
+    #[serde(rename = "baking powder")]
+    baking_powder: u32,
+    #[serde(rename = "chocolate chips")]
+    chocolate_chips: u32,
+}
+
+#[derive(Serialize, Deserialize)]
+struct BakeInput {
+    recipe: HashMap<String, u32>,
+    pantry: HashMap<String, u32>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct BakeOutput {
+    cookies: u32,
+    pantry: HashMap<String, u32>,
+}
+
+#[axum::debug_handler]
+async fn bake_recipe(jar: CookieJar) -> Json<BakeOutput> {
+    let cookie = jar.get("recipe").unwrap();
+    let plain_bytes = cookie.value().as_bytes();
+    let message = general_purpose::STANDARD.decode(plain_bytes).unwrap();
+    let recipe = serde_json::from_slice::<BakeInput>(&message).unwrap();
+    let amount_baked = recipe
+        .recipe
+        .iter()
+        .map(|(&ref ingredient, &amount)| {
+            let pantry_amount = recipe.pantry.get(ingredient)?;
+            Some(pantry_amount / amount)
+        })
+        .map(|val| val.unwrap_or(0))
+        .min()
+        .unwrap_or(0);
+    let mut new_pantry = recipe.pantry.clone();
+    for (&ref ingredient, amount) in recipe.recipe.iter() {
+        new_pantry
+            .entry(ingredient.to_string())
+            .and_modify(|total| *total = *total - (amount_baked * amount));
+    }
+    let output = BakeOutput {
+        cookies: amount_baked,
+        pantry: new_pantry,
+    };
+    Json(output)
+}
+
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
@@ -134,6 +206,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/4/strength", post(reindeer_cheer))
         .route("/4/contest", post(reindeer_contest))
         .route("/6", post(count_elves))
+        .route("/7/decode", get(decode_recipe))
+        .route("/7/bake", get(bake_recipe))
         .route("/", get(hello_world));
     Ok(router.into())
 }
