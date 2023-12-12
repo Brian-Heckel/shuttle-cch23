@@ -7,6 +7,7 @@ edition = "2021"
 axum = { version = "0.7.0", features = ["macros", "multipart"] }
 axum-extra = { version = "0.9.0", features = ["cookie"] }
 base64 = "0.21.5"
+color-eyre = "0.6.2"
 pix = "0.13.3"
 png_pong = "0.8.2"
 reqwest = { version = "0.11.22", features = ["json"] }
@@ -17,7 +18,9 @@ shuttle-axum = { version = "0.35.0", default-features = false, features = [
 ] }
 shuttle-runtime = { version = "0.35.0", default-features = false }
 tokio = "1.28.2"
-tower-http = { version = "0.5.0", features = ["fs"] }
+tower = "0.4.13"
+tower-http = { version = "0.5.0", features = ["fs", "trace"] }
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing-error = "0.2.0"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "ansi"] }
 tracing-tree = "0.3.0"
