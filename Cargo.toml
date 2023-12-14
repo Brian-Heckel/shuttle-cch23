@@ -7,6 +7,7 @@ edition = "2021"
 axum = { version = "0.7.0", features = ["macros", "multipart"] }
 axum-extra = { version = "0.9.0", features = ["cookie"] }
 base64 = "0.21.5"
+chrono = { version = "0.4.31", features = ["clock"] }
 color-eyre = "0.6.2"
 fancy-regex = "0.12.0"
 image = "0.24.7"
@@ -24,3 +25,5 @@ tracing = "0.1.40"
 tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "ansi"] }
 tracing-tree = "0.3.0"
+ulid = { version = "1.1.0", features = ["serde", "uuid"] }
+uuid = "1.6.1"
