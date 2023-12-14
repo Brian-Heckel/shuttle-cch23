@@ -9,8 +9,7 @@ axum-extra = { version = "0.9.0", features = ["cookie"] }
 base64 = "0.21.5"
 color-eyre = "0.6.2"
 fancy-regex = "0.12.0"
-pix = "0.13.3"
-png_pong = "0.8.2"
+image = "0.24.7"
 reqwest = { version = "0.11.22", features = ["json"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
