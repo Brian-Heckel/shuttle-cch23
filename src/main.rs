@@ -10,6 +10,7 @@ use axum::{
     Router,
 };
 use chrono::{DateTime, Utc};
+use sqlx::PgPool;
 use tower_http::{services::ServeFile, trace::TraceLayer};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
@@ -19,6 +20,7 @@ mod cch_error;
 mod day1;
 mod day11;
 mod day12;
+mod day13;
 mod day4;
 mod day6;
 mod day7;
@@ -32,8 +34,9 @@ async fn get_error() -> impl IntoResponse {
     (StatusCode::INTERNAL_SERVER_ERROR, "Oh No!")
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 struct ServerState {
+    pool: PgPool,
     packet_map: Arc<Mutex<HashMap<String, i64>>>,
 }
 
@@ -53,8 +56,13 @@ impl ServerState {
 }
 
 #[shuttle_runtime::main]
-async fn main() -> shuttle_axum::ShuttleAxum {
-    let state = ServerState::default();
+async fn main(#[shuttle_shared_db::Postgres()] pool: PgPool) -> shuttle_axum::ShuttleAxum {
+    color_eyre::install().unwrap();
+
+    let state = ServerState {
+        pool,
+        packet_map: Arc::new(Mutex::new(HashMap::new())),
+    };
 
     Registry::default()
         .with(EnvFilter::from_default_env())
@@ -81,6 +89,11 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/12/load/:packet", get(day12::load_packet))
         .route("/12/ulids", post(day12::convert_ulids))
         .route("/12/ulids/:weekday", post(day12::ulid_info))
+        .route("/13/sql", get(day13::base_query))
+        .route("/13/reset", post(day13::reset_table))
+        .route("/13/orders", post(day13::insert_orders))
+        .route("/13/orders/total", get(day13::total_orders))
+        .route("/13/orders/popular", get(day13::get_popular))
         .nest_service(
             "/11/assets/decoration.png",
             ServeFile::new("assets/decoration.png"),
