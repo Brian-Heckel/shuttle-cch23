@@ -1,18 +1,13 @@
-use std::collections::HashMap;
-
 use axum::{
     extract::{Multipart, Path},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
-    Json, Router,
+    Router,
 };
-use axum_extra::extract::CookieJar;
-use base64::{engine::general_purpose, Engine};
 use pix::{chan::Channel, rgb::Rgb};
 use png_pong::Decoder;
 use serde::{Deserialize, Serialize};
-use tower::ServiceBuilder;
 use tower_http::{services::ServeFile, trace::TraceLayer};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
@@ -42,7 +37,7 @@ struct PokeResponse {
 async fn get_pokemon_weight(Path(pokenumber): Path<u32>) -> impl IntoResponse {
     let mut base_url: String = "https://pokeapi.co/api/v2/pokemon/".into();
     base_url.push_str(&pokenumber.to_string());
-    base_url.push_str("/");
+    base_url.push('/');
     let body: PokeResponse = reqwest::get(base_url).await.unwrap().json().await.unwrap();
     let kilo_wieght = body.weight / 10;
     kilo_wieght.to_string()
@@ -53,7 +48,7 @@ async fn get_pokemon_weight(Path(pokenumber): Path<u32>) -> impl IntoResponse {
 async fn get_pokemon_momentum(Path(pokenumber): Path<u32>) -> impl IntoResponse {
     let mut base_url: String = "https://pokeapi.co/api/v2/pokemon/".into();
     base_url.push_str(&pokenumber.to_string());
-    base_url.push_str("/");
+    base_url.push('/');
     let g = 9.825;
     let body: PokeResponse = reqwest::get(base_url).await.unwrap().json().await.unwrap();
     let kilo_wieght = (body.weight as f64) / 10.0;

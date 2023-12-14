@@ -3,11 +3,10 @@ use std::collections::HashMap;
 use axum::extract::Json;
 use axum_extra::extract::CookieJar;
 use base64::{engine::general_purpose, Engine};
-use color_eyre::eyre::{eyre, OptionExt};
+use color_eyre::eyre::OptionExt;
 use color_eyre::Report;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::cch_error::ReportError;
 
@@ -67,27 +66,18 @@ impl BakeInput {
             .min()
             .unwrap_or(0)
     }
-
-    /// Finds the items in the recipe that is not in the
-    /// pantry and then adds them in the pantry to make it 0
-    pub fn adjust_pantry(&mut self) {
-        for key in self.recipe.keys().cloned() {
-            self.pantry.entry(key).or_insert(0);
-        }
-    }
-
     /// assumes the pantry is adjusted
     pub fn bake(&self) -> BakeOutput {
         let cookies = self.find_amount_baked();
         let new_pantry: HashMap<String, u64> = self
             .pantry
             .iter()
-            .filter_map(|(ingredient, stock)| match self.recipe.get(ingredient) {
+            .map(|(ingredient, stock)| match self.recipe.get(ingredient) {
                 Some(recipe_amount) => {
                     let new_stock: u64 = stock - (cookies * recipe_amount);
-                    Some((ingredient.clone(), new_stock))
+                    (ingredient.clone(), new_stock)
                 }
-                None => Some((ingredient.clone(), *stock)),
+                None => (ingredient.clone(), *stock),
             })
             .collect();
         BakeOutput {
