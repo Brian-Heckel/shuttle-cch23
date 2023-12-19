@@ -32,11 +32,11 @@ pub async fn html_render_unsafe(Json(render_json): Json<RenderJson>) -> Html<Str
 
 #[tracing::instrument]
 pub async fn html_render_safe(Json(render_json): Json<RenderJson>) -> Html<String> {
-    let mut tera = Tera::new("templates/*.html").unwrap();
+    let tera = Tera::new("templates/*.html").unwrap();
     let mut context = Context::new();
     context.insert("content", &render_json.content);
     let response_html = tera.render("day14.html", &context).unwrap();
     // to make the validator happy
-    let response = response_html.replace("&#x2F;", "/");
+    let response = response_html.trim_end().replace("&#x2F;", "/");
     Html(response)
 }
