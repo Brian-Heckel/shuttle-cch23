@@ -70,6 +70,11 @@ async fn main(#[shuttle_shared_db::Postgres()] pool: PgPool) -> shuttle_axum::Sh
         .with(ErrorLayer::default())
         .init();
 
+    let state = ServerState {
+        pool,
+        packet_map: Arc::new(Mutex::new(HashMap::new())),
+    };
+
     let router = Router::new()
         .route("/-1/error", get(get_error))
         .route("/1/*nums", get(day1::recalibrate_ids))
