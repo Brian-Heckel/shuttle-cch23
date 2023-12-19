@@ -20,6 +20,7 @@ shuttle-axum = { version = "0.35.0", default-features = false, features = [
 shuttle-runtime = { version = "0.35.0", default-features = false }
 shuttle-shared-db = { version = "0.35.1", features = ["postgres"] }
 sqlx = { version = "0.7.3", features = ["runtime-tokio-native-tls", "postgres"] }
+tera = "1.19.1"
 tokio = "1.28.2"
 tower = "0.4.13"
 tower-http = { version = "0.5.0", features = ["fs", "trace"] }

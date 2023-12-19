@@ -21,6 +21,7 @@ mod day1;
 mod day11;
 mod day12;
 mod day13;
+mod day14;
 mod day18;
 mod day4;
 mod day6;
@@ -96,6 +97,7 @@ async fn main(#[shuttle_shared_db::Postgres()] pool: PgPool) -> shuttle_axum::Sh
         .route("/13/orders/total", get(day13::total_orders))
         .route("/13/orders/popular", get(day13::get_popular))
         .route("/14/unsafe", post(day14::html_render_unsafe))
+        .route("/14/safe", post(day14::html_render_safe))
         .route("/18/reset", post(day18::reset_table))
         .route("/18/regions", post(day18::insert_regions))
         .route("/18/orders", post(day18::insert_orders))
