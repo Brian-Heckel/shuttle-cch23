@@ -10,6 +10,7 @@ use axum::{
     Router,
 };
 use chrono::{DateTime, Utc};
+use day19::BirdState;
 use sqlx::PgPool;
 use tower_http::{services::ServeFile, trace::TraceLayer};
 use tracing_error::ErrorLayer;
@@ -24,6 +25,7 @@ mod day13;
 mod day14;
 mod day15;
 mod day18;
+mod day19;
 mod day4;
 mod day6;
 mod day7;
@@ -41,6 +43,7 @@ async fn get_error() -> impl IntoResponse {
 struct ServerState {
     pool: PgPool,
     packet_map: Arc<Mutex<HashMap<String, i64>>>,
+    bird_state: Arc<BirdState>,
 }
 
 impl ServerState {
@@ -75,6 +78,7 @@ async fn main(#[shuttle_shared_db::Postgres()] pool: PgPool) -> shuttle_axum::Sh
     let state = ServerState {
         pool,
         packet_map: Arc::new(Mutex::new(HashMap::new())),
+        bird_state: Default::default(),
     };
 
     let router = Router::new()
@@ -106,6 +110,13 @@ async fn main(#[shuttle_shared_db::Postgres()] pool: PgPool) -> shuttle_axum::Sh
         .route("/18/orders", post(day18::insert_orders))
         .route("/18/regions/total", get(day18::total_per_region))
         .route("/18/regions/top_list/:number", get(day18::top_list))
+        .route("/19/ws/ping", get(day19::ready_game))
+        .route("/19/reset", post(day19::reset_tweet_count))
+        .route("/19/views", get(day19::get_tweet_count))
+        .route(
+            "/19/ws/room/:room_number/user/:user_name",
+            get(day19::connect_room),
+        )
         .nest_service(
             "/11/assets/decoration.png",
             ServeFile::new("assets/decoration.png"),
