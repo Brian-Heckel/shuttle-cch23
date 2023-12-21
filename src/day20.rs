@@ -1,4 +1,4 @@
-use std::{path::Path, str::from_utf8};
+use std::str::from_utf8;
 
 use axum::body::Bytes;
 use color_eyre::eyre::OptionExt;

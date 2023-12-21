@@ -12,6 +12,7 @@ use axum::{
 use chrono::{DateTime, Utc};
 use day19::BirdState;
 use sqlx::PgPool;
+use tokio::sync::Semaphore;
 use tower_http::{services::ServeFile, trace::TraceLayer};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
@@ -27,6 +28,7 @@ mod day15;
 mod day18;
 mod day19;
 mod day20;
+mod day21;
 mod day4;
 mod day6;
 mod day7;
@@ -45,6 +47,8 @@ struct ServerState {
     pool: PgPool,
     packet_map: Arc<Mutex<HashMap<String, i64>>>,
     bird_state: Arc<BirdState>,
+
+    one_second_request_lock: Arc<Semaphore>,
 }
 
 impl ServerState {
@@ -80,6 +84,8 @@ async fn main(#[shuttle_shared_db::Postgres()] pool: PgPool) -> shuttle_axum::Sh
         pool,
         packet_map: Arc::new(Mutex::new(HashMap::new())),
         bird_state: Default::default(),
+
+        one_second_request_lock: Arc::new(Semaphore::new(1)),
     };
 
     let router = Router::new()
@@ -121,6 +127,8 @@ async fn main(#[shuttle_shared_db::Postgres()] pool: PgPool) -> shuttle_axum::Sh
         .route("/20/archive_files", post(day20::num_files))
         .route("/20/archive_files_size", post(day20::size_files))
         .route("/20/cookie", post(day20::find_cookie))
+        .route("/21/coords/:binary", get(day21::get_cell))
+        .route("/21/country/:binary", get(day21::get_country))
         .nest_service(
             "/11/assets/decoration.png",
             ServeFile::new("assets/decoration.png"),
