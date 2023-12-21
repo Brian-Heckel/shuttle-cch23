@@ -30,6 +30,7 @@ mod day19;
 mod day20;
 mod day21;
 mod day4;
+mod day5;
 mod day6;
 mod day7;
 mod day8;
@@ -92,6 +93,7 @@ async fn main(#[shuttle_shared_db::Postgres()] pool: PgPool) -> shuttle_axum::Sh
         .route("/-1/error", get(get_error))
         .route("/1/*nums", get(day1::recalibrate_ids))
         .route("/4/strength", post(day4::reindeer_cheer))
+        .route("/5", post(day5::paginate_list))
         .route("/4/contest", post(day4::reindeer_contest))
         .route("/6", post(day6::count_elves))
         .route("/7/decode", get(day7::decode_recipe))
