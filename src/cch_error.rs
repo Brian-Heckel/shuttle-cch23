@@ -3,9 +3,12 @@ use color_eyre::eyre::Report;
 
 pub struct ReportError(pub Report);
 
-impl From<Report> for ReportError {
-    fn from(err: Report) -> Self {
-        ReportError(err)
+impl<E> From<E> for ReportError
+where
+    E: Into<Report>,
+{
+    fn from(err: E) -> Self {
+        ReportError(err.into())
     }
 }
 

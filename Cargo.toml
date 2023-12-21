@@ -12,6 +12,7 @@ color-eyre = "0.6.2"
 emojis = "0.6.1"
 fancy-regex = "0.12.0"
 futures = "0.3.29"
+git2 = "0.18.1"
 image = "0.24.7"
 reqwest = { version = "0.11.22", features = ["json"] }
 serde = { version = "1.0.193", features = ["derive"] }
@@ -23,6 +24,8 @@ shuttle-axum = { version = "0.35.0", default-features = false, features = [
 shuttle-runtime = { version = "0.35.0", default-features = false }
 shuttle-shared-db = { version = "0.35.1", features = ["postgres"] }
 sqlx = { version = "0.7.3", features = ["runtime-tokio-native-tls", "postgres"] }
+tar = "0.4.40"
+tempfile = "3.8.1"
 tera = "1.19.1"
 tokio = "1.28.2"
 tokio-stream = { version = "0.1.14", features = ["full"] }

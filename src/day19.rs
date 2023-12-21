@@ -13,7 +13,7 @@ use axum::{
     },
     response::{IntoResponse, Response},
 };
-use color_eyre::eyre::{eyre, Report};
+use color_eyre::eyre::Report;
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use tokio::{
@@ -22,7 +22,7 @@ use tokio::{
 };
 use tracing::info;
 
-use crate::{cch_error::ReportError, ServerState};
+use crate::ServerState;
 
 pub async fn ready_game(ws: WebSocketUpgrade) -> Response {
     ws.on_upgrade(handle_serve_game)
