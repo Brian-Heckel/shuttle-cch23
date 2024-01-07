@@ -29,6 +29,7 @@ mod day18;
 mod day19;
 mod day20;
 mod day21;
+mod day22;
 mod day4;
 mod day5;
 mod day6;
@@ -131,6 +132,7 @@ async fn main(#[shuttle_shared_db::Postgres()] pool: PgPool) -> shuttle_axum::Sh
         .route("/20/cookie", post(day20::find_cookie))
         .route("/21/coords/:binary", get(day21::get_cell))
         .route("/21/country/:binary", get(day21::get_country))
+        .route("/22/integers", post(day22::find_no_pair))
         .nest_service(
             "/11/assets/decoration.png",
             ServeFile::new("assets/decoration.png"),
